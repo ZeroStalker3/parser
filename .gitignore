@@ -1,0 +1,5 @@
+/.venv
+/.vscode
+/geckodriver.exe
+/laptops.csv
+/parser.log
