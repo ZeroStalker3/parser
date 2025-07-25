@@ -36,3 +36,36 @@
 1,Acer Nitro 5 AN515,74999,https://market.yandex.ru/...
 2,Lenovo IdeaPad 3,64999,https://market.yandex.ru/...
 ...
+```
+
+---
+
+## 🚀 Установка и запуск
+
+### 🔧 Зависимости
+
+- Python 3.10+
+- Selenium
+- Firefox
+- Geckodriver
+
+### 🛠 Установка
+
+Установите зависимости:
+
+```bash
+pip install selenium
+```
+
+Скачайте Geckodriver и укажите путь в коде:
+
+```python
+from selenium.webdriver.firefox.service import Service
+service = Service(r'C:\my\myproject\parser\geckodriver.exe')
+```
+
+Запустите парсер:
+
+```bash
+python parser.py
+```
