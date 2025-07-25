@@ -69,3 +69,9 @@ service = Service(r'C:\my\myproject\parser\geckodriver.exe')
 ```bash
 python parser.py
 ```
+
+---
+
+✉️ Есть вопросы или предложения? [Открывайте Issue](https://github.com/ZeroStalker3/parser/issues) или создавайте Pull Request.
+
+---
