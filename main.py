@@ -24,76 +24,80 @@ def scroll_page(driver, scrolls=10, delay=1):
         time.sleep(delay)
 
 
-options = Options()
-options.headless = False  # Установите True, если хотите запустить в фоновом режиме
+def run_parser(max_items, min_price, max_price):
 
-service = Service(r'C:\my\myproject\DefaultApp\parser\geckodriver.exe')
+    service = Service(r'C:\my\myproject\DefaultApp\parser\geckodriver.exe')
 
-driver = webdriver.Firefox(service=service, options=options)
+    options = Options()
+    #options.add_argument('--headless')         # ⛔ Без открытия окна браузера
+    options.add_argument('--disable-gpu')      # Оптимизация
+    options.add_argument('--log-level=3')      # Убирает лишние предупреждения
 
-driver.get("https://market.yandex.ru/catalog--noutbuki/54544")
+    driver = webdriver.Firefox(service=service, options=options)
 
-parsed_links = set()
+    driver.get("https://market.yandex.ru/catalog--noutbuki/54544")
 
-time.sleep(5)
+    parsed_links = set()
 
-titles = driver.find_elements(By.CSS_SELECTOR, '[data-zone-name="title"] a')
-prices = driver.find_elements(By.CSS_SELECTOR, '[data-zone-name="price"]')
+    time.sleep(5)
 
-# Получаем карточки товаров
-cards = driver.find_elements(By.CSS_SELECTOR, '[data-zone-name="productSnippet"]')
-print(f"Найдено карточек: {len(cards)}")
+    titles = driver.find_elements(By.CSS_SELECTOR, '[data-zone-name="title"] a')
+    prices = driver.find_elements(By.CSS_SELECTOR, '[data-zone-name="price"]')
 
-logging.info("Начало парсинга...")
+    # Получаем карточки товаров
+    cards = driver.find_elements(By.CSS_SELECTOR, '[data-zone-name="productSnippet"]')
+    print(f"Найдено карточек: {len(cards)}")
 
-with open('laptops.csv', 'w', newline='', encoding='utf-8') as csvfile:
-    writer = csv.writer(csvfile)
+    logging.info("Начало парсинга...")
 
-    writer.writerow(['№', 'Название', 'Цена', 'Ссылка'])
+    with open('laptops.csv', 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
 
-    while True:
-        scroll_page(driver, scrolls=5, delay=1.5)
-        cards = driver.find_elements(By.CSS_SELECTOR, '[data-zone-name="productSnippet"]')
-        print(f"Найдено карточек: {len(cards)}")
+        writer.writerow(['№', 'Название', 'Цена', 'Ссылка'])
 
-        if len(parsed_links) >= 100 or len(cards) == len(parsed_links):
-            break
+        while True:
+            scroll_page(driver, scrolls=5, delay=1.5)
+            cards = driver.find_elements(By.CSS_SELECTOR, '[data-zone-name="productSnippet"]')
+            print(f"Найдено карточек: {len(cards)}")
 
-        for i, card in enumerate(cards, 1):
-            try:
-                title_elem = card.find_element(By.CSS_SELECTOR, '[data-zone-name="title"] a')
-                link = title_elem.get_attribute('href')
+            if len(parsed_links) >= max_items or len(cards) == len(parsed_links):
+                break
 
-                if link in parsed_links:
+            for i, card in enumerate(cards, 1):
+                try:
+                    title_elem = card.find_element(By.CSS_SELECTOR, '[data-zone-name="title"] a')
+                    link = title_elem.get_attribute('href')
+
+                    if link in parsed_links:
+                        continue
+
+                    price_elem = card.find_element(By.CSS_SELECTOR, '[data-zone-name="price"]')
+                    lines = price_elem.text.splitlines()
+                    price_line = next((line for line in lines if re.search(r'\d+', line)), None)
+
+                    if not price_line:
+                        logging.info(f"{i}. Пропущено — не найдена строка с ценой.")
+                        continue
+
+                    digits = re.findall(r'\d+', price_line)
+                    if not digits:
+                        logging.info(f"{i}. Пропущено — нет цены.")
+                        continue
+
+                    price = int(''.join(digits))
+                    title = title_elem.text.strip()
+
+                    if price < max_price and price > min_price:
+                            line = f"{len(parsed_links)+1}. {title} — {price} ₽ — {link}\n"
+                            #print(line.strip())
+                            writer.writerow([i, title, price, link])
+                            logging.info(f"{i}. Сохранён: {title} — {price} ₽ — {link}")
+                            parsed_links.add(link)
+                            #return len(parsed_links) 
+                    else:
+                        logging.info(f"{i}. Пропущено — цена {price} > 100000.")
+
+                except Exception as e:
+                    print(f"{i}. Ошибка: {e}")
                     continue
-
-                price_elem = card.find_element(By.CSS_SELECTOR, '[data-zone-name="price"]')
-                lines = price_elem.text.splitlines()
-                price_line = next((line for line in lines if re.search(r'\d+', line)), None)
-
-                if not price_line:
-                    logging.info(f"{i}. Пропущено — не найдена строка с ценой.")
-                    continue
-
-                digits = re.findall(r'\d+', price_line)
-                if not digits:
-                    logging.info(f"{i}. Пропущено — нет цены.")
-                    continue
-
-                price = int(''.join(digits))
-                title = title_elem.text.strip()
-
-                if price < 100_000:
-                        line = f"{len(parsed_links)+1}. {title} — {price} ₽ — {link}\n"
-                        #print(line.strip())
-                        writer.writerow([i, title, price, link])
-                        logging.info(f"{i}. Сохранён: {title} — {price} ₽ — {link}")
-                        parsed_links.add(link)
-                else:
-                    logging.info(f"{i}. Пропущено — цена {price} > 100000.")
-
-            except Exception as e:
-                print(f"{i}. Ошибка: {e}")
-                continue
-
-driver.quit()
+    driver.quit()
