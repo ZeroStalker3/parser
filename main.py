@@ -29,7 +29,7 @@ def run_parser(max_items, min_price, max_price):
     service = Service(r'C:\my\myproject\DefaultApp\parser\geckodriver.exe')
 
     options = Options()
-    #options.add_argument('--headless')         # ⛔ Без открытия окна браузера
+    options.add_argument('--headless')         # ⛔ Без открытия окна браузера
     options.add_argument('--disable-gpu')      # Оптимизация
     options.add_argument('--log-level=3')      # Убирает лишние предупреждения
 
